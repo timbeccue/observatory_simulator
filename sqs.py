@@ -1,10 +1,8 @@
 # sqs_send.py
 
 import boto3
-import json
-import random
 from tqdm import tqdm # progress bars
-import sys
+import sys,time,random,json
 
 class Queuer():
 
@@ -51,6 +49,26 @@ class Queuer():
         self.toQURL = self.toAWS.url
 
 
+    def read_queue_item(self):
+    
+        response = self.sqs_c.receive_message(
+            QueueUrl=self.fromQURL,
+            AttributeNames=[ 'device' ],
+            MaxNumberOfMessages=1,    
+            MessageAttributeNames=[ 'All' ],
+            VisibilityTimeout=10,         #This CANNOT BE 0!  
+            WaitTimeSeconds=3 # 0==short polling, 0<x<20==long polling
+        )
+    
+        try:
+            message = response['Messages'][0]
+            receipt_handle = message['ReceiptHandle']
+            print(f"{message['Body']} was received.\n")
+            delete_response = self.sqs_c.delete_message(QueueUrl=self.fromQURL, ReceiptHandle=receipt_handle)
+            return message['Body']
+        except:
+            return False
+
     def read_queue(self):
         messages = []
         while True:
@@ -68,15 +86,16 @@ class Queuer():
                 length = -1
                 length = len(response['Messages'])
                  
-                print('\n', length, ' messages in to_WMD_1 queue. ', end="")
+                #print('\n', length, ' messages in to_WMD_1 queue. ', end="")
                 for index in range(length):
                     message = response['Messages'][index]
                     receipt_handle = message['ReceiptHandle']
                     #print(f"{message['Body']} was received.\n")
                     messages.append(message['Body'])
                     delete_response = self.sqs_c.delete_message(QueueUrl=self.fromQURL, ReceiptHandle=receipt_handle)
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
+                    #sys.stdout.write('.')
+                    #sys.stdout.flush()
+                    #print()
                     #continue
             except:
                 continue
@@ -87,46 +106,34 @@ class Queuer():
         #print('Messages: ', *messages, sep='\n- ')
         return messages
 
-    def send_to_queue(self, messageBody="It was a modest afternoon..."):
-        messageAttributes = {
-            "Title": {
-                "DataType": "String",
-                "StringValue": "Margaret\"s big adventure"
-            },
-            "AnotherAttribute": {
-                "DataType": "String",
-                "StringValue": "Another string value"
-            },
-        }
+    def send_to_queue(self, messageBody="empty body"):
         messageGroupId = 'LandOfSunshine'
-        mountCommand = json.dumps({
-            "device":  f"mount_{random.randint(0,9)}",
-            "equinox":  2000.0,
-            #"ra": "12h30m30.0s",
-            "ra": round(random.random() * 24, 3),
-            #"ha_rate":  0.1E-5,
-            "dec": round(random.random() * 180 - 90, 3),
-            "tracking":  True,  
-            "command": "goto",
-            "messagebody": messageBody
-        })
 
         response = self.sqs_c.send_message(
             QueueUrl=self.fromAWS.url,
-            #MessageAttributes=messageAttributes,
-            MessageBody=mountCommand,
+            MessageBody=messageBody,
             MessageGroupId=messageGroupId,
-            #MessageDeduplicationId=str(randy)
         )
         #print(f"Sent message. Message id is {response['MessageId']}")
 
+
     def send(self,n):
+        """ 
+        Send n test messages to goto random ra and dec.
+        """
         def test_msg(i=0):
             while True:
-                yield f"test message {i}"
+                yield json.dumps({
+                    "device": "mount_1",
+                    "ra": round(random.random() * 24, 3),
+                    "dec": round(random.random() * 180 - 90, 3),
+                    "command": "goto",
+                    "timestamp": int(time.time()),
+                    "test id": i,
+                })
                 i += 1
         msg = test_msg()
-        for k in tqdm(range(n), ncols=100):
+        for k in tqdm(range(n), ncols=70):
             self.send_to_queue(next(msg))
 
 
