@@ -9,19 +9,26 @@ class Queuer():
     sqs_r = boto3.resource('sqs', 'us-east-1')
     sqs_c = boto3.client('sqs', 'us-east-1')
 
-    def __init__(self, toAWS="to_aws_pythonbits.fifo", fromAWS="from_aws_pythonbits.fifo"):
+    def __init__(self):
         """
         Get an existing sqs queue, or create a new one if the requested queue doesn't exist.
         :param toAWS: name of the queue to use to write to. must be a string that ends in '.fifo'.
         :param fromAWS: name of the queue to use to read from. must be a string that ends in '.fifo'.
         """
 
-        self.toAWSName = toAWS
-        self.fromAWSName = fromAWS
-        self.queueCreateAttributes = {
+        self.fromAWSName = "to_aws_pythonbits.fifo" 
+        self.toAWSName = "from_aws_pythonbits.fifo"
+
+        self.fromAWSAttributes = {
             'FifoQueue': 'true',
             'DelaySeconds': '0',
-            'MessageRetentionPeriod': '1800',
+            'MessageRetentionPeriod': '180', # 3 minutes before state becomes stale
+            'ContentBasedDeduplication': 'true'
+        }
+        self.toAWSAttributes = {
+            'FifoQueue': 'true',
+            'DelaySeconds': '0',
+            'MessageRetentionPeriod': '900', # 15 minutes to complete a command
             'ContentBasedDeduplication': 'true'
         }
 
@@ -32,7 +39,7 @@ class Queuer():
             self.toAWS = self.sqs_r.get_queue_by_name(QueueName=self.toAWSName)
             #print(f'Using existing queue: {self.toAWS.url}')
         except:
-            self.toAWS = self.sqs_r.create_queue(QueueName=self.toAWSName, Attributes=self.queueCreateAttributes)
+            self.toAWS = self.sqs_r.create_queue(QueueName=self.toAWSName, Attributes=self.toAWSAttributes)
             #print(f'Created new queue: {self.toAWS.url}')
 
 
@@ -42,7 +49,7 @@ class Queuer():
             self.fromAWS = self.sqs_r.get_queue_by_name(QueueName=self.fromAWSName)
             #print(f'Using existing queue: {self.fromAWS.url}')
         except:
-            self.fromAWS = self.sqs_r.create_queue(QueueName=self.fromAWSName, Attributes=self.queueCreateAttributes)
+            self.fromAWS = self.sqs_r.create_queue(QueueName=self.fromAWSName, Attributes=self.fromAWSAttributes)
             #print(f'Created new queue: {self.fromAWS.url}')
 
         self.fromQURL = self.fromAWS.url
@@ -53,13 +60,12 @@ class Queuer():
     
         response = self.sqs_c.receive_message(
             QueueUrl=self.fromQURL,
-            AttributeNames=[ 'device' ],
+            #AttributeNames=[ 'device' ],
             MaxNumberOfMessages=1,    
-            MessageAttributeNames=[ 'All' ],
+            #MessageAttributeNames=[ 'All' ],
             VisibilityTimeout=10,         #This CANNOT BE 0!  
             WaitTimeSeconds=3 # 0==short polling, 0<x<20==long polling
         )
-    
         try:
             message = response['Messages'][0]
             receipt_handle = message['ReceiptHandle']
@@ -68,6 +74,13 @@ class Queuer():
             return message['Body']
         except:
             return False
+
+    def send_status_update(self, status_string):
+        response = self.sqs_c.send_message(
+            QueueUrl=self.toAWS.url,
+            MessageBody=status_string,
+            MessageGroupId="status_messagegroupid"
+        )
 
     def read_queue(self):
         messages = []

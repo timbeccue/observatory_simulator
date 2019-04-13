@@ -1,5 +1,5 @@
 # mount_device.py
-
+import json, time
 
 class Mount():
 
@@ -34,7 +34,7 @@ class Mount():
         self.dec = dec
         print(f'Slewing to ra: {self.ra}, dec: {self.dec}.')
 
-    def get_mount_status(self):
+    def print_mount_status(self):
         status = f"""
         --------------------------------
         Mount Status:
@@ -47,6 +47,18 @@ class Mount():
         --------------------------------
         """
         print(status)
+    
+    def get_mount_status(self):
+        status = {
+            'ra': self.ra,
+            'dec': self.dec,
+            'is_parked': self.is_parked,
+            'is_tracking': self.is_tracking,
+            'tracking_ra_rate': self.tracking_ra_rate,
+            'tracking_dec_rate': self.tracking_dec_rate,
+            'timestamp': int(time.time())
+        }
+        return json.dumps(status)
 
 
 if __name__=="__main__":

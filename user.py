@@ -1,6 +1,6 @@
 from cmd import Cmd
 import json, time
-import sqs, mount_device
+import sqs, dynamodb, mount_device
 
 class MyPrompt(Cmd):
     prompt = ':: '
@@ -8,6 +8,7 @@ class MyPrompt(Cmd):
 
     q = sqs.Queuer()
     m = mount_device.Mount()
+    d = dynamodb.DynamoDB()
 
 
     def default(self, inp):
@@ -68,9 +69,10 @@ class MyPrompt(Cmd):
         print("Parks the telescope.")
 
     def do_status(self, inp):
-        self.m.get_mount_status()
+        status = {"State": "State"}
+        print(self.d.get_item(status))
     def help_status(self):
-        print("Retrieve and print status from mount device.")
+        print("Retrieve and print status from dynamodb.")
 
     def do_print(self, inp):
         print(f"Type: {type(inp)}.")

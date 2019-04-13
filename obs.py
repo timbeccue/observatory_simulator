@@ -1,10 +1,11 @@
 
 # obs.py
 
-import sqs, mount_device 
+import sqs, dynamodb, mount_device 
 import time, json
 from random import randint
 from tqdm import tqdm
+import threading
 
 
 class Observatory:
@@ -12,15 +13,20 @@ class Observatory:
     def __init__(self): 
         self.q = sqs.Queuer() 
         self.m = mount_device.Mount()
+        self.d = dynamodb.DynamoDB()
         self.run()
 
     def run(self):
+
+
+
         while True:
             # Scan for a new task
             new_message = self.q.read_queue_item()
             # If there's new work, do it.
             if new_message is not False:
                 self._do_request(json.loads(new_message))
+            self.update_status()
             time.sleep(1)
 
 
@@ -33,6 +39,12 @@ class Observatory:
             self.m.park()
             self._progress()
 
+    def update_status(self):
+        status = self.m.get_mount_status()
+        status = json.loads(status)
+        status['State'] = 'State'
+        self.d.insert_item(status)
+
 
     def _progress(self):
         """ 
@@ -44,3 +56,6 @@ class Observatory:
 
 if __name__=="__main__":
     wmd = Observatory()
+
+
+    # TODO: send state
