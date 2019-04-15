@@ -50,13 +50,13 @@ class Mount():
     
     def get_mount_status(self):
         status = {
-            'ra': self.ra,
-            'dec': self.dec,
-            'is_parked': self.is_parked,
-            'is_tracking': self.is_tracking,
-            'tracking_ra_rate': self.tracking_ra_rate,
-            'tracking_dec_rate': self.tracking_dec_rate,
-            'timestamp': int(time.time())
+            'ra': str(self.ra),
+            'dec': str(self.dec),
+            'is_parked': str(self.is_parked),
+            'is_tracking': str(self.is_tracking),
+            'tracking_ra_rate': str(self.tracking_ra_rate),
+            'tracking_dec_rate': str(self.tracking_dec_rate),
+            'timestamp': str(int(time.time()))
         }
         return json.dumps(status)
 
