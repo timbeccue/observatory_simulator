@@ -6,18 +6,18 @@ class DynamoDB():
 
     d = boto3.resource('dynamodb', 'us-east-1')
 
-    def __init__(self):
+    def __init__(self, tablename):
         
-        self.table_name = "observatory_state_pythonbits"
+        self.table_name = tablename #"observatory_state_pythonbits"
         self.hash_name = "State"
 
         # Try creating table. If table already exists, use existing.
         try: 
             self.table = self.create_table(self.table_name, self.hash_name)
-            print(f'Created new table: {self.table}.')
+            #print(f'Created new table: {self.table}.')
         except Exception as e:
             self.table = self.d.Table(self.table_name) 
-            print(f'Using existing table: {self.table}.')
+            #print(f'Using existing table: {self.table}.')
 
 
     def create_table(

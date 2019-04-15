@@ -1,0 +1,17 @@
+# siteconfig.yml
+
+Sites: 
+  site1:
+    name: West Mountain Drive
+    country: USA
+    tz: -8
+    lat: 34
+    lng: -119
+    elevation: 0
+  site2:
+    name: Sollee Obsrevatory
+    country: USA
+    tz: -7
+    lat: 35.55444
+    lng: -105.870277
+    elevatoin: 2201

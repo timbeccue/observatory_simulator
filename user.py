@@ -1,14 +1,58 @@
 from cmd import Cmd
-import json, time, datetime
+import json, time, datetime,yaml
 import sqs, dynamodb, mount_device
 
-class MyPrompt(Cmd):
-    prompt = ':: '
-    intro = "\nWelcome to photon ranch! Type ? to list commands"
 
-    q = sqs.Queuer()
-    m = mount_device.Mount()
-    d = dynamodb.DynamoDB()
+
+def init_resources(configfile):
+
+    all_queues = {} 
+    all_dynamodb = {} 
+
+    with open(configfile, "r") as stream:
+        try:
+            config = yaml.safe_load(stream)
+            sites = config['Sites'].keys() 
+
+            for site in sites:
+                d = make_dynamodb(site)
+                q = make_queues(site)
+
+                all_dynamodb[site] = d
+                all_queues[site] = q
+
+            resources = {
+                "all_dynamodb": all_dynamodb,
+                "all_queues": all_queues,
+                "all_sites": list(sites)
+                }
+            return resources
+
+        except yaml.YAMLError as exc:
+            print(exc)
+
+def make_queues(sitename):
+    fromAWS = sitename + '_from_aws_pythonbits.fifo'
+    toAWS = sitename + '_to_aws_pythonbits.fifo'
+    return sqs.Queuer(fromAWS, toAWS)
+
+def make_dynamodb(sitename):
+    tablename = sitename + "_state_pythonbits"
+    return dynamodb.DynamoDB(tablename) 
+
+
+
+class MyPrompt(Cmd):
+
+    resources = init_resources("sites_config.yml")
+    q = resources['all_queues']
+    d = resources['all_dynamodb']
+
+    all_sites = resources['all_sites']
+    current_site = all_sites[0] 
+
+    prompt = current_site+':: '
+    intro = "\nWelcome to photon ranch! Type ? to list commands"
 
     def default(self, inp):
         if inp == 'x' or inp == 'q' or inp == 'exit':
@@ -21,7 +65,21 @@ class MyPrompt(Cmd):
         (Used to repeat last command instead)
         """
         pass
- 
+    
+
+
+    def do_set_obs(self, inp):
+        lowercase_input = inp.lower()
+        if lowercase_input in self.all_sites:
+           self.current_site = lowercase_input
+           self.prompt = lowercase_input+':: '
+
+    def help_set_obs(self):
+        print(f'Current active observatory: {self.current_site}.')
+        print(f'Change the current active observatory with "set_obs <3-letter-sitename>".')
+
+
+
     def do_test(self, inp):
         """
         Send n test messages to sqs.
@@ -31,17 +89,36 @@ class MyPrompt(Cmd):
         try:
             n = int(inp)
             print(f"\nSending {n} test messages to sqs.")
-            self.q.send(n)
+            self.q[self.current_site].send(n)
             print()
         except:
             print("input must be an integer (number of messages to send)") 
     def help_test(self):
         print("Send test messages to sqs. First argument is number of messages.")
         print("If no argument is provided, default is 1.")
+        
+    def do_a(self, inp):
+        try:
+            n = 3 
+            print(f"\nSending {n} test messages to sqs A.")
+            self.q['wmd'].send(n)
+            print()
+        except:
+            print("failed A") 
+
+    def do_b(self, inp):
+        try:
+            n = 3 
+            print(f"\nSending {n} test messages to sqs B.")
+            self.q['saf'].send(n)
+            print()
+        except:
+            print("failed B") 
+
 
 
     def do_get(self, inp):
-        messages = self.q.read_queue()
+        messages = self.q[self.current_site].read_queue()
         for message in messages:
             message = json.loads(message)
             if message['command'] == 'goto':
@@ -68,14 +145,14 @@ class MyPrompt(Cmd):
             "command": "park",
             "timestamp": int(time.time())
         }
-        self.q.send_to_queue(json.dumps(msg))
+        self.q[self.current_site].send_to_queue(json.dumps(msg))
     def help_park(self):
         print("Parks the telescope.")
 
 
     def do_status(self, inp):
         status = {"State": "State"}
-        response = self.d.get_item(status)
+        response = self.d[self.current_site].get_item(status)
         secondsold = int(time.time()) - int(response['timestamp'])
         age = str(datetime.timedelta(seconds=secondsold))
         print(response)
@@ -107,7 +184,7 @@ class MyPrompt(Cmd):
                 "command": "goto",
                 "timestamp": int(time.time())
             }
-            self.q.send_to_queue(json.dumps(msg))
+            self.q[self.current_site].send_to_queue(json.dumps(msg))
         except:
             print("Error (probably bad input). See sample goto command: ")
             print("'goto ra=1.1 dec=2.2'")

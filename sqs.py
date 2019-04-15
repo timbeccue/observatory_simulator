@@ -9,15 +9,17 @@ class Queuer():
     sqs_r = boto3.resource('sqs', 'us-east-1')
     sqs_c = boto3.client('sqs', 'us-east-1')
 
-    def __init__(self):
+    def __init__(self, fromAWSName, toAWSName):
         """
         Get an existing sqs queue, or create a new one if the requested queue doesn't exist.
         :param toAWS: name of the queue to use to write to. must be a string that ends in '.fifo'.
         :param fromAWS: name of the queue to use to read from. must be a string that ends in '.fifo'.
         """
 
-        self.fromAWSName = "to_aws_pythonbits.fifo" 
-        self.toAWSName = "from_aws_pythonbits.fifo"
+        #self.fromAWSName = "to_aws_pythonbits.fifo" 
+        #self.toAWSName = "from_aws_pythonbits.fifo"
+        self.fromAWSName = fromAWSName
+        self.toAWSName = toAWSName
 
         self.fromAWSAttributes = {
             'FifoQueue': 'true',
