@@ -1,7 +1,7 @@
 
 # obs.py
 
-import sqs, dynamodb, mount_device 
+import sqs, dynamodb, s3, mount_device, camera_device 
 import time, json, yaml
 from random import randint
 from tqdm import tqdm
@@ -32,14 +32,17 @@ def make_dynamodb(sitename):
 
 class Observatory:
 
+    update_status_period = 5 #seconds
+    scan_for_tasks_period = 2
+
     def __init__(self, name): 
         self.name = name
         self.m = mount_device.Mount()
+        self.c = camera_device.Camera()
+
         self.d = make_dynamodb(self.name)
         self.q = make_queues(self.name)
-
-        self.update_status_period = 5 #seconds
-        self.scan_for_tasks_period = 2
+        self.s = s3.S3(self.name)
 
         self.run()
 
@@ -72,11 +75,19 @@ class Observatory:
         if command == 'park':
             self.m.park()
             self._progress()
+        if command == 'expose':
+            filename = self.c.start_exposure(self.name, r['duration'])
+            self._progress(r['duration'])
+            self.s.upload_file(filename)
+
+            
 
     def update_status(self):
         while True:
-            status = self.m.get_mount_status()
-            status = json.loads(status)
+            m_status = json.loads(self.m.get_mount_status())
+            c_status = json.loads(self.c.get_camera_status())
+
+            status ={**m_status, **c_status}
 
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'
@@ -85,12 +96,17 @@ class Observatory:
 
             time.sleep(self.update_status_period)
 
-    def _progress(self):
+    def _progress(self, duration=None):
         """ 
         Show dummy progress bar to simulate activity.
+        Optional time param specifies approx duration.
         """
-        for k in tqdm(range(100000 * randint(1,20)**2), ncols=70):
-            pass
+        if duration is None:
+            for k in tqdm(range(100000 * randint(1,20)**2), ncols=70):
+                pass
+        else:
+            for k in tqdm(range(int(float(duration)*1000)), ncols=70):
+                time.sleep(0.001)
 
 
 if __name__=="__main__":

@@ -22,7 +22,7 @@ class DynamoDB():
 
     def create_table(
         self, table_name, hash_name,
-        read_throughput=5, write_throughput=5
+        read_throughput=2, write_throughput=2
     ):
         dynamodb = self.d
 
