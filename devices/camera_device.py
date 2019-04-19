@@ -18,7 +18,7 @@ class Camera:
     def start_exposure(self, site, duration):
         print(f"started {duration} second exposure.")
         self.last_exposure_time = duration
-        self.last_image_name = f'{site}_testimage_{duration}s_no{self.image_number}.jpg'
+        self.last_image_name = f'{int(time.time())}_{site}_testimage_{duration}s_no{self.image_number}.jpg'
         print(f"image file: {self.last_image_name}")
         self.images.append(self.last_image_name)
         #self.save_image(self.last_image_name)

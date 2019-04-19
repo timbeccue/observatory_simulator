@@ -1,34 +1,13 @@
 
 # obs.py
 
-import sqs, dynamodb, s3, mount_device, camera_device 
-import time, json, yaml
+from devices import mount_device, camera_device 
+import time, json
 from random import randint
-from tqdm import tqdm
+from tqdm import tqdm 
 import threading
+from aws.resources import Resources as r
 
-def init_resources(configfile):
-
-    all_queues = {} 
-    all_dynamodb = {} 
-
-    with open(configfile, "r") as stream:
-        try:
-            config = yaml.safe_load(stream)
-            sites = config['Sites'].keys() 
-            return list(sites)
-
-        except yaml.YAMLError as exc:
-            print(exc)
-
-def make_queues(sitename):
-    fromAWS = sitename + '_from_aws_pythonbits.fifo'
-    toAWS = sitename + '_to_aws_pythonbits.fifo'
-    return sqs.Queuer(fromAWS, toAWS)
-
-def make_dynamodb(sitename):
-    tablename = sitename + "_state_pythonbits"
-    return dynamodb.DynamoDB(tablename) 
 
 class Observatory:
 
@@ -40,9 +19,9 @@ class Observatory:
         self.m = mount_device.Mount()
         self.c = camera_device.Camera()
 
-        self.d = make_dynamodb(self.name)
-        self.q = make_queues(self.name)
-        self.s = s3.S3(self.name)
+        self.d = r.make_dynamodb(self.name)
+        self.q = r.make_sqs(self.name)
+        self.s = r.make_s3(self.name)
 
         self.run()
 
@@ -92,7 +71,12 @@ class Observatory:
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'
             status['site'] = self.name
-            self.d.insert_item(status)
+            try:
+                self.d.insert_item(status)
+            except:
+                print("Error sending to dynamodb.")
+                print("If this is a new site, dynamodb might still be initializing.") 
+                print("Please wait a minute and try again.")
 
             time.sleep(self.update_status_period)
 
@@ -111,7 +95,8 @@ class Observatory:
 
 if __name__=="__main__":
     observatories = {}
-    sites = init_resources("sites_config.yml")
+    resources = r("sites_config.yml")
+    sites = resources.get_all_sites()
     for site in sites:
         observatories[site] = Observatory(site)
 

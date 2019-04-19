@@ -16,14 +16,15 @@ class S3:
         self.site_name = site_name
 
     def upload_file(self, to_filename):
-        from_file = 'data/base.jpg'
+        from_file = '../data/base.jpg'
         dirpath = os.path.abspath(os.path.dirname(__file__))
         from_filename = os.path.join(dirpath, from_file)
+        to_file = f'{self.site_name}/'+to_filename
         try:
             response = self.s3_c.upload_file(
-                from_filename, 
-                self.bucket_name, 
-                to_filename,
+                Filename=from_filename, 
+                Bucket=self.bucket_name, 
+                Key=to_file,
                 ExtraArgs={
                     'ACL':'public-read',
                     'ContentType': 'image/jpg'
@@ -37,7 +38,7 @@ class S3:
     def get_image_url(self, filename):
         params = {
             'Bucket': str(self.bucket_name),
-            'Key': str(filename)
+            'Key': f'{self.site_name}/'+str(filename)
         }
         url = self.s3_c.generate_presigned_url(
             ClientMethod='get_object', 
@@ -52,4 +53,4 @@ if __name__=='__main__':
     dirpath = os.path.abspath(os.path.dirname(__file__))
     filename = os.path.join(dirpath, 'data/base.jpg')
     destination = 'ccd_test2.jpg'
-    s.upload_file(filename, destination)
+    s.upload_file(destination)

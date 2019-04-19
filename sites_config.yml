@@ -15,3 +15,5 @@ Sites:
     lat: 35.55444
     lng: -105.870277
     elevation: 2201
+  site31:
+    name: A third site
