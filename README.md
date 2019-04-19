@@ -1,4 +1,4 @@
-# cloud-concept
+# observatory_simulator
 
 This code is intended to demonstrate a simple working example of communication between a client and an observatory. 
 
