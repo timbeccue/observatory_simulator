@@ -12,25 +12,24 @@ class Queuer():
     def __init__(self, fromAWSName, toAWSName):
         """
         Get an existing sqs queue, or create a new one if the requested queue doesn't exist.
-        :param toAWS: name of the queue to use to write to. must be a string that ends in '.fifo'.
-        :param fromAWS: name of the queue to use to read from. must be a string that ends in '.fifo'.
+        Args:
+            toAWS (str): name of the queue to use to write to. must be a string that ends in '.fifo'.
+            fromAWS (str): name of the queue to use to read from. must be a string that ends in '.fifo'.
         """
 
-        #self.fromAWSName = "to_aws_pythonbits.fifo" 
-        #self.toAWSName = "from_aws_pythonbits.fifo"
         self.fromAWSName = fromAWSName
         self.toAWSName = toAWSName
 
         self.fromAWSAttributes = {
             'FifoQueue': 'true',
             'DelaySeconds': '0',
-            'MessageRetentionPeriod': '180', # 3 minutes before state becomes stale
+            'MessageRetentionPeriod': '180', # 3 minutes before state becomes stale, else deleted.
             'ContentBasedDeduplication': 'true'
         }
         self.toAWSAttributes = {
             'FifoQueue': 'true',
             'DelaySeconds': '0',
-            'MessageRetentionPeriod': '900', # 15 minutes to complete a command
+            'MessageRetentionPeriod': '900', # 15 minutes to complete a command, else deleted.
             'ContentBasedDeduplication': 'true'
         }
 
@@ -57,8 +56,27 @@ class Queuer():
         self.fromQURL = self.fromAWS.url
         self.toQURL = self.toAWS.url
 
+    def send_status_update(self, status_string):
+        """
+        Sends a status string (presumably json) to sqs. 
+
+        This doesn't work so well because queues don't support easy 
+        retrieval of the most recent entry, which is all we care about.
+        
+        Currently, this method is unused, but I'm keeping it for reference.
+        """
+        response = self.sqs_c.send_message(
+            QueueUrl=self.toAWS.url,
+            MessageBody=status_string,
+            MessageGroupId="status_messagegroupid"
+        )
 
     def read_queue_item(self):
+        """
+        Read one entry in the queue. 
+        If successful, return the message body and delete the entry in sqs.
+        If unsuccessful (ie. queue is empty), return False.
+        """
     
         response = self.sqs_c.receive_message(
             QueueUrl=self.fromQURL,
@@ -70,6 +88,7 @@ class Queuer():
         )
         try:
             message = response['Messages'][0]
+            # receipt_handle is used to delete the entry from the queue.
             receipt_handle = message['ReceiptHandle']
             print(f"{message['Body']} was received.\n")
             delete_response = self.sqs_c.delete_message(QueueUrl=self.fromQURL, ReceiptHandle=receipt_handle)
@@ -77,14 +96,15 @@ class Queuer():
         except:
             return False
 
-    def send_status_update(self, status_string):
-        response = self.sqs_c.send_message(
-            QueueUrl=self.toAWS.url,
-            MessageBody=status_string,
-            MessageGroupId="status_messagegroupid"
-        )
-
     def read_queue(self):
+        """
+        Read all queue entries and return them in a list.
+
+        All messages downloaded at once, then processed sequentially from there.
+        For our use, it's better to read and process one at a time (see read_queue_item above)
+        
+        Currently, this method is not used, but I'm keeping it for reference.
+        """
         messages = []
         while True:
     
@@ -101,17 +121,11 @@ class Queuer():
                 length = -1
                 length = len(response['Messages'])
                  
-                #print('\n', length, ' messages in to_WMD_1 queue. ', end="")
                 for index in range(length):
                     message = response['Messages'][index]
                     receipt_handle = message['ReceiptHandle']
-                    #print(f"{message['Body']} was received.\n")
                     messages.append(message['Body'])
                     self.sqs_c.delete_message(QueueUrl=self.fromQURL, ReceiptHandle=receipt_handle)
-                    #sys.stdout.write('.')
-                    #sys.stdout.flush()
-                    #print()
-                    #continue
             except:
                 continue
             break
@@ -120,6 +134,13 @@ class Queuer():
         return messages
 
     def send_to_queue(self, messageBody="empty body"):
+        """
+        Send a message to the 'toAWS' queue.
+        Args:
+            messagebody (str): body of the message to send.
+        """
+
+        # Arbitrary string. Not exactly sure what this does.
         messageGroupId = 'LandOfSunshine'
 
         response = self.sqs_c.send_message(
@@ -133,6 +154,9 @@ class Queuer():
     def send(self,n):
         """ 
         Send n test messages to goto random ra and dec.
+
+        SQS class is not a great place for this method, but I won't mess with
+        things unless we start using this code for real.
         """
         def test_msg(i=0):
             while True:

@@ -77,7 +77,7 @@ class Observatory:
             except:
                 print("Error sending to dynamodb.")
                 print("If this is a new site, dynamodb might still be initializing.") 
-                print("Please wait a minute and try again.")
+                print("Code will automatically retry until successful.")
 
             time.sleep(self.update_status_period)
 
