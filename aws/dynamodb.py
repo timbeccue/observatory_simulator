@@ -73,7 +73,8 @@ class DynamoDB():
 
 
 if __name__=="__main__":
-    d = DynamoDB();
+    pass
+    #d = DynamoDB();
 
     #item = {
     #    "State": "stateval",

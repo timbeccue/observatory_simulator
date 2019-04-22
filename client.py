@@ -1,6 +1,6 @@
 from cmd import Cmd
 import json, time, datetime,yaml
-from aws.resources import Resources
+from aws.init_resources import Resources
 
 
 
@@ -35,7 +35,6 @@ class MyPrompt(Cmd):
         if lowercase_input in self.all_sites:
            self.current_site = lowercase_input
            self.prompt = lowercase_input+':: '
-
     def help_set_obs(self):
         print(f'Current active observatory: {self.current_site}.')
         print(f'Change the current active observatory with "set_obs <3-letter-sitename>".')
@@ -56,19 +55,11 @@ class MyPrompt(Cmd):
         except:
             print("input must be an integer (number of messages to send)") 
     def help_test(self):
-        print("Send test messages to sqs. First argument is number of messages.")
-        print("If no argument is provided, default is 1.")
+        print("Send commands to the current site. Takes one arg: number of messages.")
+        print("Example: 'test 5' will send 5 commands. 'test' with no arg == 'test 1'.")
+        print("Commands will slew the mount to random coordinates.")
+        print("This is useful to quickly send lots of messages to test high use handling.")
         
-
-    def do_get(self, inp):
-        messages = self.q[self.current_site].read_queue()
-        for message in messages:
-            message = json.loads(message)
-            if message['command'] == 'goto':
-                self.m.slew_to_eq(message['ra'], message['dec'])
-    def help_get(self):
-        print('Read messages from sqs.')
-
 
     def do_tracking(self, inp):
         input = inp.strip().lower()
@@ -103,13 +94,6 @@ class MyPrompt(Cmd):
     def help_status(self):
         print("Retrieve and print status from dynamodb.")
 
-
-    def do_print(self, inp):
-        print(f"Type: {type(inp)}.")
-        print(f"Content: {inp}.")
-    def help_print(self):
-        print("Prints the argument and its type.")
- 
 
     def do_goto(self, inp):
         """
@@ -147,15 +131,19 @@ class MyPrompt(Cmd):
     def help_expose(self):
         print("Starts an exposure. Provide duration in seconds. Example: 'expose 5.3'.")
 
+
     def do_get_url(self, inp):
         status = {"State": "State"}
         response = self.d[self.current_site].get_item(status)
-        filename = response['last_image_name']
+        filename = response['cam1_last_image_name']
         if filename != 'empty':
             url = self.s[self.current_site].get_image_url(filename)
             print(f"Last image url: {url}")
         else:
             print("No images available.")
+    def help_get_url(self):
+        print('Gets a url pointing to the latest image taken at the current '\
+              'active observatory. The image is a jpg stored at s3.')
         
 
 

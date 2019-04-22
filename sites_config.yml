@@ -1,6 +1,8 @@
 # siteconfig.yml
 
+# Each entry under the top level 'Sites' creates a new set of AWS resources under that name. 
 Sites: 
+
   site1:
     name: West Mountain Drive
     country: USA
@@ -8,6 +10,7 @@ Sites:
     lat: 34
     lng: -119
     elevation: 0
+
   site2:
     name: Sollee Obsrevatory
     country: USA
@@ -15,5 +18,6 @@ Sites:
     lat: 35.55444
     lng: -105.870277
     elevation: 2201
-  site31:
+
+  site3:
     name: A third site

@@ -1,4 +1,4 @@
-# delete_site.py
+#delete_resources.py
 
 """
 
@@ -11,6 +11,10 @@ This script is run directly from the command line, with the site name
 as the only argument:
 
 >>> python delete_site.py <sitename>
+
+
+Useful for cleanup after adding sites to the config file (which automatically
+generates a complete new set of resources for that site).
 
 """
 import sys, boto3

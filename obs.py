@@ -6,7 +6,7 @@ import time, json
 from random import randint
 from tqdm import tqdm 
 import threading
-from aws.resources import Resources as r
+from aws.init_resources import Resources as r
 
 
 class Observatory:
@@ -71,6 +71,7 @@ class Observatory:
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'
             status['site'] = self.name
+            status['timestamp'] = str(int(time.time()))
             try:
                 self.d.insert_item(status)
             except:
@@ -86,11 +87,16 @@ class Observatory:
         Optional time param specifies approx duration.
         """
         if duration is None:
-            for k in tqdm(range(100000 * randint(1,20)**2), ncols=70):
+            for _ in tqdm(range(100000 * randint(1,20)**2), ncols=70, bar_format='{desc}: {percentage:3.0f}%|{bar}| simulating activity '):
                 pass
         else:
-            for k in tqdm(range(int(float(duration)*1000)), ncols=70):
-                time.sleep(0.001)
+            #for k in tqdm(range(int(float(duration)*1000)), ncols=70):
+            #    time.sleep(0.001)
+            steps = int(100*duration)
+            with tqdm(total=steps*10, ncols=70, bar_format='{desc}: {percentage:3.0f}%|{bar}| simulated exposing: {elapsed_s:3.00f} s') as tbar:
+                for _ in range(steps):
+                    time.sleep(0.01)
+                    tbar.update(10)
 
 
 if __name__=="__main__":

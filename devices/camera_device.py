@@ -7,6 +7,7 @@ class Camera:
     bucketname = 'pythonbits'
 
     def __init__(self):
+        self.camera_name = 'cam1'
         self.binX = 1
         self.binY = 1
         self.last_exposure_time = 0
@@ -34,10 +35,10 @@ class Camera:
 
     def get_camera_status(self):
         status = {
-            'binX': str(self.binX),
-            'binY': str(self.binY),
-            'last_exposure_time': str(self.last_exposure_time),
-            'last_image_name': self.last_image_name,
+            f'{self.camera_name}_binX': str(self.binX),
+            f'{self.camera_name}_binY': str(self.binY),
+            f'{self.camera_name}_last_exposure_time': str(self.last_exposure_time),
+            f'{self.camera_name}_last_image_name': self.last_image_name,
         }
         return json.dumps(status)
 

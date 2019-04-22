@@ -107,15 +107,13 @@ class Queuer():
                     receipt_handle = message['ReceiptHandle']
                     #print(f"{message['Body']} was received.\n")
                     messages.append(message['Body'])
-                    delete_response = self.sqs_c.delete_message(QueueUrl=self.fromQURL, ReceiptHandle=receipt_handle)
+                    self.sqs_c.delete_message(QueueUrl=self.fromQURL, ReceiptHandle=receipt_handle)
                     #sys.stdout.write('.')
                     #sys.stdout.flush()
                     #print()
                     #continue
             except:
                 continue
-                print('\nto_WMD_1 queue is empty.\n')
-                break  #Just to end this little demo 
             break
         #print(f"\nNumber of messages: {len(messages)}")
         #print('Messages: ', *messages, sep='\n- ')
@@ -154,6 +152,7 @@ class Queuer():
 
 
 if __name__=="__main__":
-    q = Queuer()
-    q.read_queue()
+    pass
+    #q = Queuer()
+    #q.read_queue()
     #q.send_to_queue()

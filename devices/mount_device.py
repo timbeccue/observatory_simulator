@@ -4,6 +4,7 @@ import json, time
 class Mount():
 
     def __init__(self):
+        self.device_name = 'mnt1'
         self.ra = 0
         self.dec = 0
         self.is_parked = True
@@ -50,13 +51,13 @@ class Mount():
     
     def get_mount_status(self):
         status = {
-            'ra': str(self.ra),
-            'dec': str(self.dec),
-            'is_parked': str(self.is_parked),
-            'is_tracking': str(self.is_tracking),
-            'tracking_ra_rate': str(self.tracking_ra_rate),
-            'tracking_dec_rate': str(self.tracking_dec_rate),
-            'timestamp': str(int(time.time()))
+            f'{self.device_name}_ra': str(self.ra),
+            f'{self.device_name}_dec': str(self.dec),
+            f'{self.device_name}_is_parked': str(self.is_parked),
+            f'{self.device_name}_is_tracking': str(self.is_tracking),
+            f'{self.device_name}_tracking_ra_rate': str(self.tracking_ra_rate),
+            f'{self.device_name}_tracking_dec_rate': str(self.tracking_dec_rate),
+            #f'{self.device_name}_timestamp': str(int(time.time()))
         }
         return json.dumps(status)
 

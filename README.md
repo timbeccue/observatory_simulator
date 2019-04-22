@@ -1,6 +1,6 @@
 # observatory_simulator
 
-This code is intended to demonstrate a simple working example of communication between a client and an observatory. 
+This code is intended to demonstrate a simple working example of communication between a client and an observatory using AWS services (sqs, dynamodb, s3). 
 
 ### Observatory features:
 - Read from a config file and automatically starts simulated observatory sites for each site in the config. Generates AWS instances for each site. 
