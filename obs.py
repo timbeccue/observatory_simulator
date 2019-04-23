@@ -16,7 +16,8 @@ class Observatory:
 
     def __init__(self, name): 
         self.name = name
-        self.m = mount_device.Mount()
+        #The line below is a specific instance of a configuratin which needs to be owner specified.
+        self.m = mount_device.Mount(driver='ASCOM.PWI4.Telescope')
         self.c = camera_device.Camera()
 
         self.d = r.make_dynamodb(self.name)
@@ -48,11 +49,20 @@ class Observatory:
     def _do_request(self, r):
         command = r['command']
         if command == 'goto':
-            self.m.slew_to_eq(r['ra'], r['dec'])
+            self.m.slew_to_eq(r['ra'], r['dec'], r['sys'])
+            self._progress()
+        if command == 'goto_azalt':
+            self.m.slew_to_azalt(r['az'], r['alt'])
             print(self.name)
             self._progress()
+        if command == 'allstop':
+            self.m.allstop()
+            self._progress()
         if command == 'park':
-            self.m.park()
+            self.m.mount.park()
+            self._progress()
+        if command == 'unpark':
+            self.m.unpark()
             self._progress()
         if command == 'expose':
             filename = self.c.start_exposure(self.name, r['duration'])

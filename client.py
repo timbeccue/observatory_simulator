@@ -1,5 +1,5 @@
 from cmd import Cmd
-import json, time, datetime,yaml
+import json, time, datetime
 from aws.init_resources import Resources
 
 
@@ -80,10 +80,33 @@ class MyPrompt(Cmd):
             "timestamp": int(time.time())
         }
         self.q[self.current_site].send_to_queue(json.dumps(msg))
+        
+    def do_unpark(self, inp):
+        msg = {
+            "device": "mount_1",
+            "command": "unpark",
+            "timestamp": int(time.time())
+        }
+        self.q[self.current_site].send_to_queue(json.dumps(msg))
+        
+        
+    def do_allstop(self, inp):
+        msg = {
+            "device": "mount_1",
+            "command": "all_stop",
+            "timestamp": int(time.time())
+        }
+        self.q[self.current_site].send_to_queue(json.dumps(msg))
+        
     def help_park(self):
-        print("Parks the telescope.")
+        print("Parks the telescope. Tracking turned off")
 
+    def help_unpark(self):
+        print("unParks the telescope. Tracking stays off")
 
+    def help_allstop(self):
+        print("Stops all motion.   Tracking stays off")
+        
     def do_status(self, inp):
         status = {"State": "State"}
         response = self.d[self.current_site].get_item(status)
@@ -91,30 +114,55 @@ class MyPrompt(Cmd):
         age = str(datetime.timedelta(seconds=secondsold))
         print(json.dumps(response, indent=2))
         print(f"Status is {age} (hh:mm:ss) old.")
+        
     def help_status(self):
         print("Retrieve and print status from dynamodb.")
 
 
     def do_goto(self, inp):
         """
-        Arguments: two args spearated by a space.
-        Example: 'ra=23.22 dec=44.64'
+        Arguments: Three args separated by a space.
+        Example: 'ra=23.22 dec=44.64 sys="J2000.0"'
         """
         try:
-            args = parse(inp)     
+            args = parse(inp)
+            print('args:  ', args)
             if not ('ra' in args.keys()) and 'dec' in args.keys():
                 print("invalid inputs. use form 'ra=x dec=y'")
             msg = {
                 "device": "mount_1",
                 "ra": args['ra'],
                 "dec": args['dec'],
+                'sys': args['sys'],
                 "command": "goto",
                 "timestamp": int(time.time())
             }
             self.q[self.current_site].send_to_queue(json.dumps(msg))
         except:
             print("Error (probably bad input). See sample goto command: ")
-            print("'goto ra=1.1 dec=2.2'")
+            print("'goto ra=1.1 dec=2.2 sys='J2000.0''")
+            
+    def do_goto_azalt(self, inp):
+        """
+        Arguments: Two args separated by a space.
+        Example: 'ra=23.22 dec=44.64 '
+        """
+        try:
+            args = parse(inp)     
+            if not ('az' in args.keys()) and 'alt' in args.keys():
+                print("invalid inputs. use form 'az=x alt=y'")
+            msg = {
+                "device": "mount_1",
+                "az": args['az'],       #Does a sngle argument make sense? Also  Zen or airmass
+                "alt": args['alt'],
+                "command": "goto_azalt",
+                "timestamp": int(time.time())
+            }
+            self.q[self.current_site].send_to_queue(json.dumps(msg))
+        except:
+            print("Error (probably bad input). See sample goto_azalt command: ")
+            print("'goto az=30 alt=2.2'")
+            
     def help_goto(self):
         print("Send goto command. Expects args: 'ra=<float> dec=<float>'.")
 
@@ -155,6 +203,7 @@ def parse(inp):
     """
 
     # Remove whitespace in front and back. Split into separate strings at spaces.
+    print(inp)
     arg_list = inp.strip().split()
     arg_dict = {}
     for arg in arg_list:

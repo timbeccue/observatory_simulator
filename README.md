@@ -35,7 +35,7 @@ See all available commands with `?`.
 
 Clone and cd into the repository. 
 
-Install the python requiremnets into a virtual environment with this command:
+Install the python requirements into a virtual environment with this command:
 
 (note: requires python 3.6+)
 
