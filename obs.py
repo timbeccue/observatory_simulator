@@ -49,10 +49,10 @@ class Observatory:
     def _do_request(self, r):
         command = r['command']
         if command == 'goto':
-            self.m.slew_to_eq(r['ra'], r['dec'], r['sys'])
+            self.m.slew_to_eq(float(r['ra']), float(r['dec']), r['rdsys'])
             self._progress()
         if command == 'goto_azalt':
-            self.m.slew_to_azalt(r['az'], r['alt'])
+            self.m.slew_to_azalt(float(r['az']), float(r['alt']))
             print(self.name)
             self._progress()
         if command == 'allstop':

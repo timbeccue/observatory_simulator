@@ -131,16 +131,16 @@ class MyPrompt(Cmd):
                 print("invalid inputs. use form 'ra=x dec=y'")
             msg = {
                 "device": "mount_1",
-                "ra": args['ra'],
-                "dec": args['dec'],
-                'sys': args['sys'],
+                "ra": float(args['ra']),
+                "dec": float(args['dec']),
+                'rdsys': args['rdsys'],
                 "command": "goto",
                 "timestamp": int(time.time())
             }
             self.q[self.current_site].send_to_queue(json.dumps(msg))
         except:
             print("Error (probably bad input). See sample goto command: ")
-            print("'goto ra=1.1 dec=2.2 sys='J2000.0''")
+            print("'goto ra=1.1 dec=2.2 rdsys='J2000.0''")
             
     def do_goto_azalt(self, inp):
         """
@@ -153,15 +153,15 @@ class MyPrompt(Cmd):
                 print("invalid inputs. use form 'az=x alt=y'")
             msg = {
                 "device": "mount_1",
-                "az": args['az'],       #Does a sngle argument make sense? Also  Zen or airmass
-                "alt": args['alt'],
+                "az": float(args['az']),       #Does a sngle argument make sense? Also  Zen or airmass
+                "alt": float(args['alt']),
                 "command": "goto_azalt",
                 "timestamp": int(time.time())
             }
             self.q[self.current_site].send_to_queue(json.dumps(msg))
         except:
             print("Error (probably bad input). See sample goto_azalt command: ")
-            print("'goto az=30 alt=2.2'")
+            print("'goto az=30.0 alt=2.2'")
             
     def help_goto(self):
         print("Send goto command. Expects args: 'ra=<float> dec=<float>'.")
