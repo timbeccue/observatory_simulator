@@ -1,7 +1,8 @@
 
 # obs.py
 
-from devices import mount_device, camera_device 
+from devices import mount_device, camera_device
+import other_devices
 import time, json
 from random import randint
 from tqdm import tqdm 
@@ -18,13 +19,28 @@ class Observatory:
         self.name = name
         #The line below is a specific instance of a configuratin which needs to be owner specified.
         self.m = mount_device.Mount(driver='ASCOM.PWI4.Telescope')
-        self.c = camera_device.Camera()
+        self.r = other_devices.Rotator(driver='ASCOM.PWI3.Rotator')
+        self.fl = other_devices.Focuser(driver='ASCOM.PWI3.Focuser')
+
+        self.c = camera_device.MaximCamera(driver='Maxim.CCDcamera')
+        self.ch = camera_device.MaximHelper(driver='Maxim.Application')
 
         self.d = r.make_dynamodb(self.name)
         self.q = r.make_sqs(self.name)
         self.s = r.make_s3(self.name)
 
         self.run()
+        
+        #                camera_1_app = win32com.client.Dispatch("Maxim.Application")
+#                camera_1= win32com.client.Dispatch("Maxim.CCDCamera")
+#                #doc = win32com.client.Dispatch("Maxim.Document")   #Envoking this creates an empty image.
+#                camera_1.LinkEnabled = True
+#                camera_1_app.TelescopeConnected = True
+#                camera_1_app.FocuserConnected = True
+#                camera_1.CoolerOn = True
+#                if camera_1.LinkEnabled and camera_1_app.TelescopeConnected and camera_1_app.FocuserConnected \
+#                   and camera_1.CoolerOn:
+#                    print("Maxim appears connected.")
 
     def run(self):
         """
@@ -75,8 +91,10 @@ class Observatory:
         while True:
             m_status = json.loads(self.m.get_mount_status())
             c_status = json.loads(self.c.get_camera_status())
+            r_status = json.loads(self.r.get_rotator_status())
+            fc_status = json.loads(self.fc.get_focuser_status())
 
-            status ={**m_status, **c_status}
+            status ={**m_status, **c_status, **r_status, **fc_status}
 
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'

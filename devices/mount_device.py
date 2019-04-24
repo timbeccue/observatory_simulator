@@ -21,8 +21,6 @@ class Mount():
         if driver is not None:
             try:
                 self.amnt = win32com.client.Dispatch(self.driver)
-                self.arot = win32com.client.Dispatch('ASCOM.PWI3.Rotator')
-                self.afoc = win32com.client.Dispatch('ASCOM.PWI3.Focuser')
                 print(f'Connected to driver:  {self.driver}.')
                 self.tracking_ra_rate = 0    #PWI4 does not support rates yet.
                 self.tracking_dec_rate = 0
@@ -32,8 +30,7 @@ class Mount():
                 self.tracking_ra_rate = 0    #NB NB NB THis needs fixing
                 self.tracking_dec_rate = 0
         self.on_init_connected = self.amnt.Connected = True  #NB NB NB Do we want to do something else if connect fails?
-        self.arot_connected = self.arot.Connected = True 
-        self.afoc.connected = self.afoc.Connected = True 
+
         self.driver_version = self.amnt.DriverVersion
         self.interface_version = self.amnt.InterfaceVersion
         #I think these "local" instance variables are not needed and apt to end up stale. Better  use self.amnt....
