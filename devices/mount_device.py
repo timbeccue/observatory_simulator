@@ -120,8 +120,6 @@ class Mount():
         zen\t\t\t{zen}
         air\t\t\t{airmass}
         inst\t\t\t{self.inst}
-        rot\t\t\t{self.arot.Rotation}
-        focus\t\t\t{self.afoc.Position}
         is_parked\t\t{self.amnt.AtPark}
         is_tracking\t\t{self.amnt.Tracking}
         is_slewing\t\t{self.amnt.Slewing}
@@ -152,11 +150,6 @@ class Mount():
             f'{self.device_name}_zen': str(zen),
             f'{self.device_name}_air': str(airmass),
             f'{self.device_name}_inst': str(self.inst),
-            f'{self.device_name}_rot': str(self.arot.Position),
-            f'{self.device_name}_rot_moving': str(self.arot.IsMoving),
-            f'{self.device_name}_focus': str(self.afoc.Position),
-            f'{self.device_name}_foctemp': str(self.afoc.Temperature),
-            f'{self.device_name}_foc_moving': str(self.afoc.IsMoving),
             f'{self.device_name}_is_parked': (self.amnt.AtPark),
             f'{self.device_name}_is_tracking': str(self.amnt.Tracking),
             f'{self.device_name}_is_slewing': str(self.amnt.Slewing),

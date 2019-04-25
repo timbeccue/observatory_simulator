@@ -3,23 +3,28 @@ import json, time, boto3, os
 from shutil import copyfile
 import win32com.client
 
-class MaximCamera():
+class Maxim:
 
     bucketname = 'pythonbits'
 
-    def __init__(self, driver= None):
-        self.camera_name = 'max1'
+    def __init__(self, driver = None):
+        self.maxim_name = 'mdl1'
         self.driver = driver        
         if self.driver is not None:
             try:
                 self.amdl = win32com.client.Dispatch(self.driver)
-                print(f'Installing driver:  {self.driver}.')
-                self.amdl.LinkEnabled = True
+                print(f'Installing driver:   {self.driver}.')
+                if not self.amdl.LinkEnabled:
+                    print('Enabling link in 2 seconds.')
+                    time.sleep(2)
+                    self.amdl.LinkEnabled = True
+                    time.sleep(0.5)
+                print('Link is:  ', self.amdl.LinkEnabled )
                 self.amdl.TemperatureSetpoint= -20.0
                 self.amdl.CoolerOn = True
             except:
                 #self.amdl = win32com.client.Dispatch('ASCOM.Simulator.Camera')
-                print('Trying to insall camera simulator, somethig failed.')
+                print('Trying to insall camera simulator, something failed.')
 
         self.binX = 1
         self.binY = 1
@@ -46,34 +51,26 @@ class MaximCamera():
         copyfile(source_file, create_file)
 
 
-    def get_camera_status(self):
+    def get_maxim_status(self):
         status = {
-            f'{self.camera_name}_binX': str(self.binX),
-            f'{self.camera_name}_binY': str(self.binY),
-            f'{self.camera_name}_last_exposure_time': str(self.last_exposure_time),
-            f'{self.camera_name}_last_image_name': self.last_image_name,
+            f'{self.maxim_name}_binX': str(self.binX),
+            f'{self.maxim_name}_binY': str(self.binY),
+            f'{self.maxim_name}_last_exposure_time': str(self.last_exposure_time),
+            f'{self.maxim_name}_last_image_name': self.last_image_name,
         }
         return json.dumps(status)
     
-    #                camera_1.LinkEnabled = True
-#                camera_1_app.TelescopeConnected = True
-#                camera_1_app.FocuserConnected = True
-#                camera_1.CoolerOn = True
-#                if camera_1.LinkEnabled and camera_1_app.TelescopeConnected and camera_1_app.FocuserConnected \
-#                   and camera_1.CoolerOn:
-#                    print("Maxim appears co
-
-class MaximHelper():
+class Helper:
 
     bucketname = 'pythonbits'
 
     def __init__(self, driver = None):
-        self.camera_name = 'maxh1'
+        self.helper_name = 'madlh1'
         self.driver = driver        
         if self.driver is not None:
             try:
                 self.amxh = win32com.client.Dispatch(self.driver)
-                print(f'Installing driver:  {self.driver}.')
+                print(f'Installing driver:   {self.driver}.')
                 self.amxh.TelescopeConnected = True
                 self.amxh.FocuserConnected = True
                 #Maxim does not support explicit Rotator connection.
@@ -81,15 +78,9 @@ class MaximHelper():
                 self.amxh = win32com.client.Dispatch('ASCOM.Simulator.Camera')
         #THis needs filling out.l
 
-
-
-
-    def get_camera_status(self):
+    def get_helper_status(self):
         status = {
-            f'{self.camera_name}_binX': str(self.binX),
-            f'{self.camera_name}_binY': str(self.binY),
-            f'{self.camera_name}_last_exposure_time': str(self.last_exposure_time),
-            f'{self.camera_name}_last_image_name': self.last_image_name,
+            f'{self.helper_name}_helper status found here': str(self.helper_name)    
         }
         return json.dumps(status)
 
@@ -99,6 +90,7 @@ class Camera:
 
     def __init__(self):
         self.camera_name = 'cam1'
+        print(f'Installing driver:   {self.camera_name}.')
         self.binX = 1
         self.binY = 1
         self.last_exposure_time = 0
@@ -135,7 +127,8 @@ class Camera:
 
 
 if __name__=="__main__":
-    c = MaximCamera(driver='Maxim.CCDCamera')
-    ch = MaximHelper(driver='Maxim.Application')
-    print(c.get_camera_status())
+    c = Maxim(driver='Maxim.CCDCamera')
+    ch = Helper(driver='Maxim.Application')
+    #cc = Camera()
+    print(c.get_maxim_status(), ch.get_helper_status())#, cc.get_camera_status())
 

@@ -15,7 +15,7 @@ import win32com.client
 class Rotator():
 
     def __init__(self, driver=None):
-        self.device_name = 'mnt1'
+        self.device_name = 'rot1'
         self.driver = driver        
         if driver is not None:
             try:
@@ -26,7 +26,7 @@ class Rotator():
                 print(f'NB NB NB:  Connected to driver: ASCOM.Simulator.Rotator')
         self.on_init_connected = self.arot.Connected = True  #NB NB NB Do we want to do something else if connect fails?
         
-    def print_rot_status(self):
+    def print_rotator_status(self):
 
         status = f"""
         --------------------------------
@@ -37,7 +37,7 @@ class Rotator():
         """
         print(status)
 
-    def get_rot_status(self):
+    def get_rotator_status(self):
 
         status = {
             f'{self.device_name}_rotation': str(self.arot.Position),
@@ -48,7 +48,7 @@ class Rotator():
 class Focuser():
 
     def __init__(self, driver=None):
-        self.device_name = 'mnt1'
+        self.device_name = 'foc1'
         self.driver = driver        
         if driver is not None:
             try:
@@ -59,7 +59,7 @@ class Focuser():
                 print(f'NB NB NB:  Connected to driver: ASCOM.Simulator.Focuser')
         self.on_init_connected = self.afoc.Connected = True  #NB NB NB Do we want to do something else if connect fails?
         
-    def print_foc_status(self):
+    def print_focuser_status(self):
 
         status = f"""
         --------------------------------
@@ -71,7 +71,7 @@ class Focuser():
         """
         print(status)
 
-    def get_foc_status(self):
+    def get_focuser_status(self):
 
         status = {
             f'{self.device_name}_focus': str(self.afoc.Position),

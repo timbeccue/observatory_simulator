@@ -1,8 +1,7 @@
 
 # obs.py
 
-from devices import mount_device, camera_device
-import other_devices
+from devices import mount_device, camera_devices, pwi_devices
 import time, json
 from random import randint
 from tqdm import tqdm 
@@ -19,11 +18,11 @@ class Observatory:
         self.name = name
         #The line below is a specific instance of a configuratin which needs to be owner specified.
         self.m = mount_device.Mount(driver='ASCOM.PWI4.Telescope')
-        self.r = other_devices.Rotator(driver='ASCOM.PWI3.Rotator')
-        self.fl = other_devices.Focuser(driver='ASCOM.PWI3.Focuser')
-
-        self.c = camera_device.MaximCamera(driver='Maxim.CCDcamera')
-        self.ch = camera_device.MaximHelper(driver='Maxim.Application')
+        self.r = pwi_devices.Rotator(driver='ASCOM.PWI3.Rotator')
+        self.fc = pwi_devices.Focuser(driver='ASCOM.PWI3.Focuser')
+        #self.cc = camera_devices.Camera()
+        self.c = camera_devices.Maxim(driver='Maxim.CCDcamera')
+        self.ch = camera_devices.Helper(driver='Maxim.Application')
 
         self.d = r.make_dynamodb(self.name)
         self.q = r.make_sqs(self.name)
@@ -90,11 +89,12 @@ class Observatory:
     def update_status(self):
         while True:
             m_status = json.loads(self.m.get_mount_status())
-            c_status = json.loads(self.c.get_camera_status())
+            c_status = json.loads(self.c.get_maxim_status())
+            ch_status = json.loads(self.ch.get_helper_status())
             r_status = json.loads(self.r.get_rotator_status())
             fc_status = json.loads(self.fc.get_focuser_status())
 
-            status ={**m_status, **c_status, **r_status, **fc_status}
+            status ={**m_status, **c_status, **r_status, **fc_status, **ch_status}
 
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'
