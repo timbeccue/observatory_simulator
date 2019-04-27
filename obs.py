@@ -21,7 +21,7 @@ class Observatory:
         self.r = pwi_devices.Rotator(driver='ASCOM.PWI3.Rotator')
         self.fc = pwi_devices.Focuser(driver='ASCOM.PWI3.Focuser')
         #self.cc = camera_devices.Camera()
-        self.c = camera_devices.Camera(driver='ASCOM.Apogee.Camera')
+        self.c = camera_devices.Camera(driver='ASCOM.Simulator.Camera')
         #self.ch = camera_devices.Helper(driver='Maxim.Application')
         print('camera object at:  ', self.c, self.c.acam)
         #print(self.c.amdl.Filter)

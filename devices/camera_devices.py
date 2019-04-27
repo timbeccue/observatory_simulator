@@ -1,7 +1,10 @@
 # camera_device.py
 import json, time, boto3, os
 from shutil import copyfile
+import threading
 import win32com.client
+from astropy.io import fits
+import numpy as np
 
 class Maxim:
 
@@ -120,28 +123,62 @@ class Camera:
                     self.acam.Connected = True
                     time.sleep(0.5)
                 print('Link is:  ', self.acam.Connected)
-                self.acam.SetCCDTemperature = -20.0
-                self.acam.CoolerOn = True
+                #self.acam.SetCCDTemperature = -20.0
+                #self.acam.CoolerOn = True
             except:
                 #self.amdl = win32com.client.Dispatch('ASCOM.Simulator.Camera')
-                print('Trying to insall camera simulator, something failed.')
+                print('Trying to install camera simulator, something failed.')
         self.binX = 1
         self.binY = 1
         self.last_exposure_time = 0
         self.last_image_name = 'empty'
         self.images = []
-
+        self.exposing = False
+        self.img_available = False
         self.image_number = 0
+        self.run()
+        
+    def run(self):
+        """
+        Run two loops in separate threads:
+        - Update status regularly to dynamodb.
+        - Get commands from sqs and execute them.
+        """
+        threading.Thread(target=self.finish_exposure).start()
 
     def start_exposure(self, site, duration, filter, repeat):
         print(f"started {duration} second exposure.")
         self.last_exposure_time = duration
+        self.acam.StartExposure(duration, True)
+        self.img_available = False
+        self.exposing = True
         self.last_image_name = f'{int(time.time())}_{site}_testimage_{duration}s_no{self.image_number}.jpg'
         print(f"image file: {self.last_image_name}")
         self.images.append(self.last_image_name)
         #self.save_image(self.last_image_name)
         self.image_number += 1
         return self.last_image_name
+    
+    def finish_exposure(self):
+        while True:
+            try:
+                if self.img_available:
+                    print(self.img[0][:5])
+                    print("Big 20 second delay here")
+                    try:
+                        hdu = fits.PrimaryHDU(self.img)
+                        hdu.header['OBSERVER'] = ("WER", 'unit = Person')
+                        hdu.writeto('Q:\\archive\\ea03\\new2.fits', overwrite=True)
+                    except:
+                        print(f'Fits file write failed.')
+                    self.img_available = False
+                    self.img = None
+                    hdu = None
+                    print("End of20 second delay")
+            except:
+                pass
+
+            time.sleep(.5)
 
     def save_image(self, image_name):
         cwd = os.path.dirname(__file__)
@@ -151,12 +188,40 @@ class Camera:
 
 
     def get_camera_status(self):
-        status = {
-            f'{self.camera_name}_binX': str(self.binX),
-            f'{self.camera_name}_binY': str(self.binY),
-            f'{self.camera_name}_last_exposure_time': str(self.last_exposure_time),
-            f'{self.camera_name}_last_image_name': self.last_image_name,
-        }
+        try:
+            state = self.acam.CameraState
+            ready = self.acam.ImageReady
+            if state == 0:
+                status = {f'{self.camera_name}_state': 'Camera Idle'}
+            elif state == 1:
+                status = {f'{self.camera_name}_state': 'Camera Waiting'}
+            elif state == 2:
+                status = {f'{self.camera_name}_state': 'Camera Exposing'}
+            elif state == 3:
+                status = {f'{self.camera_name}_state': 'Camera Reading'}
+            elif state == 4:
+                status = {f'{self.camera_name}_state': 'Camera Downloding'}
+            elif state == 5:
+                status = {f'{self.camera_name}_state': 'Camera Error'}
+            else:
+                status = {f'{self.camera_name}_state': 'No Status Available'}
+            if self.exposing:
+                status[f'{self.camera_name}_exposing'] = 'Cam Exposing'
+            else:
+                status[f'{self.camera_name}_exposing'] = 'Cam Idle'
+                
+            if ready and self.exposing:
+                status[f'{self.camera_name}_imgavail'] = 'Image Ready'
+            else:
+                status[f'{self.camera_name}_imgavail'] = 'Image Not Ready'
+            if ready and self.exposing:
+                print('reading Array')
+                self.img = self.acam.ImageArray
+                self.img_available = True
+                self.exposing = False
+    
+        except:
+            status = {f'{self.camera_name}_status': "None Available"}
         return json.dumps(status)
 
 
@@ -164,6 +229,6 @@ if __name__=="__main__":
     #c = Maxim(driver='Maxim.CCDCamera')
     #ch = Helper(driver='Maxim.Application')
     #cc = Camera()
-    c = Camera('ASCOM.Apogee.Camera')
-    print(c.get_camera_status())#, ch.get_helper_status())#, cc.get_camera_status())
+    c = Camera('ASCOM.Simulator.Camera')
+    #print(c.get_camera_status())#, ch.get_helper_status())#, cc.get_camera_status())
 
