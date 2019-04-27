@@ -21,8 +21,10 @@ class Observatory:
         self.r = pwi_devices.Rotator(driver='ASCOM.PWI3.Rotator')
         self.fc = pwi_devices.Focuser(driver='ASCOM.PWI3.Focuser')
         #self.cc = camera_devices.Camera()
-        self.c = camera_devices.Maxim(driver='Maxim.CCDcamera')
-        self.ch = camera_devices.Helper(driver='Maxim.Application')
+        self.c = camera_devices.Camera(driver='ASCOM.Apogee.Camera')
+        #self.ch = camera_devices.Helper(driver='Maxim.Application')
+        print('camera object at:  ', self.c, self.c.acam)
+        #print(self.c.amdl.Filter)
 
         self.d = r.make_dynamodb(self.name)
         self.q = r.make_sqs(self.name)
@@ -74,27 +76,32 @@ class Observatory:
             self.m.allstop()
             self._progress()
         if command == 'park':
-            self.m.mount.park()
+            print('park:  ', self, self.m)
+            self.m.park()
             self._progress()
         if command == 'unpark':
             self.m.unpark()
             self._progress()
         if command == 'expose':
-            filename = self.c.start_exposure(self.name, r['duration'])
+            print('Trying:  ', self, self.name, self.c)
+            print("deeper;  ", self.c.acam)
+            print("deepest;  ", self.c.acam.NumX)
+            self.c.start_exposure(self.name, r['duration'], r['filter'], r['repeat'])
+            filename = 'dummy.jpeg'  #self.c.start_exposure(self.name, r['duration'], r['filter'], r['repeat'])
             self._progress(r['duration'])
-            self.s.upload_file(filename)
+            self.s.upload_file(filename)   #SEnd to S3
 
             
 
     def update_status(self):
         while True:
             m_status = json.loads(self.m.get_mount_status())
-            c_status = json.loads(self.c.get_maxim_status())
-            ch_status = json.loads(self.ch.get_helper_status())
+            c_status = json.loads(self.c.get_camera_status())
+            #ch_status = json.loads(self.ch.get_helper_status())
             r_status = json.loads(self.r.get_rotator_status())
             fc_status = json.loads(self.fc.get_focuser_status())
 
-            status ={**m_status, **c_status, **r_status, **fc_status, **ch_status}
+            status ={**m_status, **c_status, **r_status, **fc_status}#, **ch_status}
 
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'
@@ -131,6 +138,7 @@ if __name__=="__main__":
     observatories = {}
     resources = r("sites_config.yml")
     sites = resources.get_all_sites()
+    print('sites:  ', sites)
     for site in sites:
         observatories[site] = Observatory(site)
 

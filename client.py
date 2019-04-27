@@ -130,7 +130,7 @@ class MyPrompt(Cmd):
             if not ('ra' in args.keys()) and 'dec' in args.keys():
                 print("invalid inputs. use form 'ra=x dec=y'")
             msg = {
-                "device": "mount_1",
+                "device": "mnt1",
                 "ra": float(args['ra']),
                 "dec": float(args['dec']),
                 'rdsys': args['rdsys'],
@@ -152,7 +152,7 @@ class MyPrompt(Cmd):
             if not ('az' in args.keys()) and 'alt' in args.keys():
                 print("invalid inputs. use form 'az=x alt=y'")
             msg = {
-                "device": "mount_1",
+                "device": "mnt1",
                 "az": float(args['az']),       #Does a sngle argument make sense? Also  Zen or airmass
                 "alt": float(args['alt']),
                 "command": "goto_azalt",
@@ -168,14 +168,26 @@ class MyPrompt(Cmd):
 
 
     def do_expose(self, inp):
-        print(f"Starting exposure: {inp} seconds.")
-        msg = {
-            "device": "camera_1",
-            "command": "expose",
-            "duration": float(inp),
-            "timestamp": int(time.time()),
-        }
-        self.q[self.current_site].send_to_queue(json.dumps(msg))
+        print(f"Starting exposure: {inp}")
+        try:
+            args = parse(inp)
+            print("args:  ", args)
+            if not ('duration' in args.keys()) and 'filter' in args.keys() and 'repeat' in args.keys():
+                print("invalid inputs. use form 'duration=x' , etc.")
+            msg = {
+                "device": "mdl1",
+                "duration": float(args['duration']),
+                "filter":  int(args['filter']),
+                "repeat":  int(args['repeat']),
+                "command": "expose",
+                "timestamp": int(time.time())
+            }
+            print('Msg is:  ', msg)
+            self.q[self.current_site].send_to_queue(json.dumps(msg))
+        except:
+            print("Error (probably bad input). See sample expose command: ")
+            print("'goto az=30.0 alt=2.2'")
+            
     def help_expose(self):
         print("Starts an exposure. Provide duration in seconds. Example: 'expose 5.3'.")
 
@@ -203,7 +215,7 @@ def parse(inp):
     """
 
     # Remove whitespace in front and back. Split into separate strings at spaces.
-    print(inp)
+    print('Parse imput:  ', inp)
     arg_list = inp.strip().split()
     arg_dict = {}
     for arg in arg_list:

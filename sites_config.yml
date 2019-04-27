@@ -12,14 +12,3 @@ Sites:
     lng: -119.68112801
     elevation: 317.75
 
-  site2:
-    name: Sollee Obsrevatory
-    alias: SAF
-    country: USA
-    tz: -7
-    lat: 35.55444
-    lng: -105.870277
-    elevation: 2201
-
-  site3:
-    name: A third site
