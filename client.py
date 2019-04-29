@@ -8,7 +8,7 @@ class MyPrompt(Cmd):
 
     r = Resources("sites_config.yml")
     q = r.get_all_sqs()
-    d = r.get_all_dyanmodb()
+    d = r.get_all_dynamodb()
     s = r.get_all_s3()
     all_sites = r.get_all_sites() 
     current_site = all_sites[0] 
