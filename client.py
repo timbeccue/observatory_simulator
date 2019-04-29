@@ -29,6 +29,12 @@ class MyPrompt(Cmd):
         pass
     
 
+    def do_list_sites(self, inp):
+        print(f"All observatory sites: ")
+        print(json.dumps(self.all_sites, indent=2))
+    def help_list_sites(self):
+        print("Lists all sites on the network.")
+        print("A site can be selected for control with 'set_obs <sitename>'.")
 
     def do_set_obs(self, inp):
         lowercase_input = inp.lower()
@@ -205,8 +211,6 @@ class MyPrompt(Cmd):
         print('Gets a url pointing to the latest image taken at the current '\
               'active observatory. The image is a jpg stored at s3.')
         
-
-
 
 def parse(inp):
     """

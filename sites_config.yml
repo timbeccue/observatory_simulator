@@ -1,9 +1,11 @@
 # siteconfig.yml
 
-# Each entry under the top level 'Sites' creates a new set of AWS resources under that name. 
+# Each entry under the top level 'Sites' creates a new set of AWS resources under that name (eg. for site1, site2, site3). 
 Sites: 
 
+  # This name ('site1') is what matters for current simulation code. 
   site1:
+    # Properties per site are listed below. However, they don't matter right now.
     name: West Mountain Drive
     alias: WMD
     country: USA
