@@ -7,19 +7,10 @@ Sites:
   site1:
     # Properties per site are listed below. However, they don't matter right now.
     name: West Mountain Drive
+    alias: WMD
     country: USA
     tz: -8
-    lat: 34
-    lng: -119
-    elevation: 0
+    lat: 334.34293028
+    lng: -119.68112801
+    elevation: 317.75
 
-  site2:
-    name: Sollee Obsrevatory
-    country: USA
-    tz: -7
-    lat: 35.55444
-    lng: -105.870277
-    elevation: 2201
-
-  site3:
-    name: A third site
