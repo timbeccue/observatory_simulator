@@ -28,10 +28,10 @@ class Maxim:
                 print(f'Installing driver:   {self.driver}.')
                 if not self.amdl.LinkEnabled:
                     print('Enabling link in 2 seconds.')
-                    time.sleep(2)
+                    time.sleep(.5)
                     self.amdl.LinkEnabled = True
                     time.sleep(0.5)
-                print('Link is:  ', self.amdl.LinkEnabled )
+                bbbprint('Link is:  ', self.amdl.LinkEnabled )
                 self.amdl.TemperatureSetpoint= -20.0
                 self.amdl.CoolerOn = True
             except:

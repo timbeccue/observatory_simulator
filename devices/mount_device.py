@@ -10,6 +10,7 @@
 
 import json, time
 import win32com.client
+from devices import dyard
 
 from math import cos, radians
 
@@ -29,8 +30,9 @@ class Mount():
                 print(f'NB NB NB:  Connected to driver: ASCOM.Simulator.Telescope')
                 self.tracking_ra_rate = 0    #NB NB NB THis needs fixing
                 self.tracking_dec_rate = 0
-        self.on_init_connected = self.amnt.Connected = True  #NB NB NB Do we want to do something else if connect fails?
-
+        self.amnt.Connected = True  #NB NB NB Do we want to do something else if connect fails?
+        self.on_init_connected = self.amnt.Connected
+        print('At mnt1 __init__:  ', self, self.amnt)
         self.driver_version = self.amnt.DriverVersion
         self.interface_version = self.amnt.InterfaceVersion
         #I think these "local" instance variables are not needed and apt to end up stale. Better  use self.amnt....
@@ -51,25 +53,27 @@ class Mount():
         
     def allstop(self):
         self.amnt.Tracking  = False
-        self.amnt.AbortSlew()
+        self.amnt.AbortSlew
         self.amnt.Tracking  = False
         print(f"Slew Stopped. Tracking off.")
 
     def park(self):
         if self.amnt.CanPark:
-            self.amnt.Park()
+            self.amnt.Park
+            print('Telescope is parked, and not tracking.')
         if self.amnt.CanSetTracking:
             self.amnt.Tracking= False
         self.amnt.Tracking  = False
-        print('Telescope is parked, and not tracking.')
+        
 
     def unpark(self):
         if self.amnt.CanPark:
-            self.amnt.Unpark()
+            self.amnt.Unpark
+            print('Telescope is un-parked, and not tracking.')
         if self.amnt.CanSetTracking:
             self.amnt.Tracking= False
         self.amnt.Tracking  = False   #Only turn tracking on after a slew.
-        print('Telescope is un-parked, and not tracking.')
+        
     
     def slew_to_eq(self, ra, dec, rdsys):
         #equ = 'J.2000.0, J.2000, B1950, J.now    etc.
@@ -161,7 +165,7 @@ class Mount():
 
 
 if __name__=="__main__":
-    m = Mount(driver='ASCOM.PWI4.Telescope')
-    dy.dev_m = m
+    m = Mount(driver='ASCOM.Simulator.Telescope')
+    dyard.dev_m = m
     print(m.get_mount_status())
     m.print_mount_status()

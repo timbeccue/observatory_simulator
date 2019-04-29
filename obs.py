@@ -12,12 +12,11 @@ from random import randint
 from tqdm import tqdm 
 
 
-
-import redis
-
-core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
-json_wc = core1_redis.get('<ptr-wx-1_state')
-print(json_wc)
+#this is a temporary construct for WMD
+#import redis
+#core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
+#json_wc = core1_redis.get('<ptr-wx-1_state')
+#print(json_wc)
 
 class Observatory:
 
@@ -27,14 +26,14 @@ class Observatory:
     def __init__(self, name): 
         self.name = name
         #The line below is a specific instance of a configuratin which needs to be owner specified.
-        self.m = mount_device.Mount(driver='ASCOM.PWI4.Telescope')
+        self.m = mount_device.Mount(driver='ASCOM.Simulator.Telescope')
         dyard.dev_m = self.m 
-        self.r = pwi_devices.Rotator(driver='ASCOM.PWI3.Rotator')
+        self.r = pwi_devices.Rotator(driver='ASCOM.Simulator.Rotator')
         dyard.dev_r = self.r
-        self.fc = pwi_devices.Focuser(driver='ASCOM.PWI3.Focuser')
+        self.fc = pwi_devices.Focuser(driver='ASCOM.Simulator.Focuser')
         dyard.dev_fc = self.fc
         #self.cc = camera_devices.Camera()
-        self.c = camera_devices.Camera(driver='ASCOM.Apogee.Camera')
+        self.c = camera_devices.Camera(driver='ASCOM.Simulator.Camera')
         dyard.dev_c = self.c
         #self.ch = camera_devices.Helper(driver='Maxim.Application')
         print('camera object at:  ', self.c, self.c.acam)
@@ -88,6 +87,7 @@ class Observatory:
     def _do_request(self, r):
         command = r['command']
         if command == 'goto':
+            print('goto command received.')
             self.m.slew_to_eq(float(r['ra']), float(r['dec']), r['rdsys'])
             self._progress()
         if command == 'goto_azalt':
@@ -98,10 +98,11 @@ class Observatory:
             self.m.allstop()
             self._progress()
         if command == 'park':
-            print('park:  ', self, self.m)
+            print('park:  ', self, self.m, self.m.park)
             self.m.park()
             self._progress()
         if command == 'unpark':
+            print('unpark:  ', self, self.m, self.m.unpark)
             self.m.unpark()
             self._progress()
         if command == 'expose':
