@@ -2,11 +2,11 @@
 # obs.py
 
 from devices import mount_device, camera_device 
-import time, json
+from aws.init_resources import Resources as r
+
+import time, json, sys, threading
 from random import randint
 from tqdm import tqdm 
-import threading
-from aws.init_resources import Resources as r
 
 
 class Observatory:
