@@ -1,13 +1,21 @@
 
 # obs.py
 
-from devices import mount_device, camera_devices, pwi_devices
+from devices import mount_device, camera_devices, pwi_devices, dyard
+
 import time, json
 from random import randint
 from tqdm import tqdm 
 import threading
 from aws.init_resources import Resources as r
 
+
+
+import redis
+
+core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
+json_wc = core1_redis.get('<ptr-wx-1_state')
+print(json_wc)
 
 class Observatory:
 
@@ -18,10 +26,14 @@ class Observatory:
         self.name = name
         #The line below is a specific instance of a configuratin which needs to be owner specified.
         self.m = mount_device.Mount(driver='ASCOM.PWI4.Telescope')
+        dyard.dev_m = self.m 
         self.r = pwi_devices.Rotator(driver='ASCOM.PWI3.Rotator')
+        dyard.dev_r = self.r
         self.fc = pwi_devices.Focuser(driver='ASCOM.PWI3.Focuser')
+        dyard.dev_fc = self.fc
         #self.cc = camera_devices.Camera()
-        self.c = camera_devices.Camera(driver='ASCOM.Simulator.Camera')
+        self.c = camera_devices.Camera(driver='ASCOM.Apogee.Camera')
+        dyard.dev_c = self.c
         #self.ch = camera_devices.Helper(driver='Maxim.Application')
         print('camera object at:  ', self.c, self.c.acam)
         #print(self.c.amdl.Filter)
@@ -29,6 +41,14 @@ class Observatory:
         self.d = r.make_dynamodb(self.name)
         self.q = r.make_sqs(self.name)
         self.s = r.make_s3(self.name)
+        
+        dyard.dev = {
+                   "c": self.c,
+                   "m": self.m,
+                   "r": self.r,
+                   'fc': self.fc,
+                   'wx': None
+                   }
 
         self.run()
         
@@ -83,12 +103,9 @@ class Observatory:
             self.m.unpark()
             self._progress()
         if command == 'expose':
-            print('Trying:  ', self, self.name, self.c)
-            print("deeper;  ", self.c.acam)
-            print("deepest;  ", self.c.acam.NumX)
-            self.c.start_exposure(self.name, r['duration'], r['filter'], r['repeat'])
+            self.c.start_exposure(self.name,  r['duration'], r['filter'], r['repeat'])
             filename = 'dummy.jpeg'  #self.c.start_exposure(self.name, r['duration'], r['filter'], r['repeat'])
-            self._progress(r['duration'])
+            self._progress(r['duration']) #should add in camera overhead once that is better predicatable
             self.s.upload_file(filename)   #SEnd to S3
 
             

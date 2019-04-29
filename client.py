@@ -215,14 +215,13 @@ def parse(inp):
     """
 
     # Remove whitespace in front and back. Split into separate strings at spaces.
-    print('Parse imput:  ', inp)
+    print('Parse input:  ', inp)
     arg_list = inp.strip().split()
     arg_dict = {}
     for arg in arg_list:
         kv = arg.split("=")
         arg_dict[kv[0]] = kv[1]
     return arg_dict
-
 
 
  

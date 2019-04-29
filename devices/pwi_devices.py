@@ -12,6 +12,7 @@ import win32com.client
 #from devices import ptr_math_helpers as pmh
 
 
+
 class Rotator():
 
     def __init__(self, driver=None):

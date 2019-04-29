@@ -10,7 +10,7 @@
 
 import json, time
 import win32com.client
-#from devices import ptr_math_helpers as pmh
+
 from math import cos, radians
 
 class Mount():
@@ -155,12 +155,13 @@ class Mount():
             f'{self.device_name}_is_slewing': str(self.amnt.Slewing),
             f'{self.device_name}_tracking_ra_rate': str(self.tracking_ra_rate),
             f'{self.device_name}_tracking_dec_rate': str(self.tracking_dec_rate),
-            #f'{self.device_name}_timestamp': str(int(time.time()))
+            f'{self.device_name}_timestamp': str(round(time.time(), 3))
         }
         return json.dumps(status)
 
 
 if __name__=="__main__":
     m = Mount(driver='ASCOM.PWI4.Telescope')
+    dy.dev_m = m
     print(m.get_mount_status())
     m.print_mount_status()

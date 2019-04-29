@@ -5,6 +5,15 @@ import threading
 import win32com.client
 from astropy.io import fits
 import numpy as np
+from devices import dyard
+
+from skimage import data, io, filters
+from skimage.transform import resize
+from skimage import img_as_float
+from skimage import exposure
+from skimage.io import imsave 
+
+from PIL import Image
 
 class Maxim:
 
@@ -136,6 +145,13 @@ class Camera:
         self.exposing = False
         self.img_available = False
         self.image_number = 0
+        self.sel_filter = 'unknown'
+        self.filters = ['air', 'dif', 'w', 'CR', 'N2', 'u', 'g', 'r', 'i', 'zs', \
+                   'PL', 'PR', 'PG', 'PB', 'O3', 'HA', 'S2', 'dif_u', 'dif_g',
+                   'dif_r', 'dif_i', 'dif_zs', 'dark']
+        self.pre_stat = None
+        self.post_stat = None
+        #self.dummy = np.zeros((2048, 2048)).astype('uint16')
         self.run()
         
     def run(self):
@@ -149,36 +165,90 @@ class Camera:
     def start_exposure(self, site, duration, filter, repeat):
         print(f"started {duration} second exposure.")
         self.last_exposure_time = duration
-        self.acam.StartExposure(duration, True)
+        """
+        Need to set up filter, possibly adjust focus
+        Need to seet up binning and so on
+        Need to get pre-exposure weather, sky conditions, mount parameters, etc.
+        Need to wait so no slews or moves are occuring.
+        This all needs to be saved or Finish_exposure phase
+        """
         self.img_available = False
         self.exposing = True
-        self.last_image_name = f'{int(time.time())}_{site}_testimage_{duration}s_no{self.image_number}.jpg'
-        print(f"image file: {self.last_image_name}")
-        self.images.append(self.last_image_name)
-        #self.save_image(self.last_image_name)
-        self.image_number += 1
+        self.pre_stat = dyard.dev_m.get_mount_status()
+        print(self.pre_stat)
+        self.acam.StartExposure(duration, True)
+
+#        self.last_image_name = f'{int(time.time())}_{site}_testimage_{duration}s_no{self.image_number}.jpg'
+#        print(f"image file: {self.last_image_name}")
+#        self.images.append(self.last_image_name)
+#        #self.save_image(self.last_image_name)
+#        self.image_number += 1
+        self.last_image_name ="dummy"
         return self.last_image_name
     
     def finish_exposure(self):
-        while True:
+        while True: 
             try:
                 if self.img_available:
                     print(self.img[0][:5])
-                    print("Big 20 second delay here")
+                    self.post_stat = dyard.dev_m.get_mount_status()
+                    print(self.post_stat)
+                    print("Big 20 second delay here", time.time())
                     try:
                         hdu = fits.PrimaryHDU(self.img)
                         hdu.header['OBSERVER'] = ("WER", 'unit = Person')
+                        '''
+                        Here we need to create averages for many fits header entries.
+                        Here we need to apply a unique sequence number and deal with
+                        repeats.
+                        Here we need to do basic flash calibration of the image.
+                        Here we need to compute a JPEG and get it off to AWS.
+                        how far do we want to carry this in a local thread?
+                        How many bins do we want to deal with?  I think 1 and 2
+                        for imagers and probably only one for spectrographs.
+                        '''
                         hdu.writeto('Q:\\archive\\ea03\\new2.fits', overwrite=True)
+                        print('Big fits done', time.time())
+                        #more needs to be done for the header
+                        #now make postage JPEG
+                        img2 =hdu.data 
+                        fimg = img2.flatten()
+                        top_val = fimg.max()
+                        simg = fimg.copy()
+                        simg.sort()
+                        ftop = int(len(fimg)*0.995)
+                        fmin = fimg.min()
+                        fmax = simg[ftop]
+                        if fmin == fmax: fmax = fmin +1    #Clearly a hack needing a fix
+                        fslope = 254./(fmax - fmin)
+                        img2 -= fmin
+                        img2 = img2*fslope
+                        fix = np.where(img2 > 254)
+                        img2[fix] = 255
+                        img2 = img2/255.                   
+                        small = resize(img2, (768, 768), mode='edge')
+                        small_gamma_corrected = exposure.adjust_gamma(small, .15)                   
+                        imsave('Q:\\archive\\ea03\\new2.jpg', (small_gamma_corrected*255.).astype('byte'))
+                        hdu.data = (small*top_val).astype('uint16')
+                        hdu.writeto('Q:\\archive\\ea03\\new2_small.fits', overwrite=True)
+#                        self.last_image_name = f'{int(time.time())}_{site}_testimage_{duration}s_no{self.image_number}.jpg'
+#                        print(f"image file: {self.last_image_name}")
+#                        self.images.append(self.last_image_name)
+#                        #self.save_image(self.last_image_name)
+#                        self.image_number += 1
                     except:
                         print(f'Fits file write failed.')
                     self.img_available = False
                     self.img = None
                     hdu = None
-                    print("End of20 second delay")
+                    print("End of20 second delay", round(time.time(), 3))
             except:
                 pass
 
             time.sleep(.5)
+            
+
+    
 
     def save_image(self, image_name):
         cwd = os.path.dirname(__file__)
@@ -219,6 +289,10 @@ class Camera:
                 self.img = self.acam.ImageArray
                 self.img_available = True
                 self.exposing = False
+                """
+                Here we need to grab other data for the fits header
+                """
+                
     
         except:
             status = {f'{self.camera_name}_status': "None Available"}
