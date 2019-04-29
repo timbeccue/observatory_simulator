@@ -1,13 +1,15 @@
 
 # obs.py
 
-from devices import mount_device, camera_devices, pwi_devices, dyard
 
-import time, json
+
+
+
+from devices import mount_device, camera_devices, pwi_devices, dyard
+from aws.init_resources import Resources as r
+import time, json, sys, threading
 from random import randint
 from tqdm import tqdm 
-import threading
-from aws.init_resources import Resources as r
 
 
 
