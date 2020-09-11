@@ -1,13 +1,22 @@
 
 # obs.py
 
-from devices import mount_device, camera_device 
-import time, json
+
+
+
+
+from devices import mount_device, camera_devices, pwi_devices, dyard
+from aws.init_resources import Resources as r
+import time, json, sys, threading
 from random import randint
 from tqdm import tqdm 
-import threading
-from aws.init_resources import Resources as r
 
+
+#this is a temporary construct for WMD
+#import redis
+#core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
+#json_wc = core1_redis.get('<ptr-wx-1_state')
+#print(json_wc)
 
 class Observatory:
 
@@ -16,14 +25,44 @@ class Observatory:
 
     def __init__(self, name): 
         self.name = name
-        self.m = mount_device.Mount()
-        self.c = camera_device.Camera()
+        #The line below is a specific instance of a configuratin which needs to be owner specified.
+        self.m = mount_device.Mount(driver='ASCOM.Simulator.Telescope')
+        dyard.dev_m = self.m 
+        self.r = pwi_devices.Rotator(driver='ASCOM.Simulator.Rotator')
+        dyard.dev_r = self.r
+        self.fc = pwi_devices.Focuser(driver='ASCOM.Simulator.Focuser')
+        dyard.dev_fc = self.fc
+        #self.cc = camera_devices.Camera()
+        self.c = camera_devices.Camera(driver='ASCOM.Simulator.Camera')
+        dyard.dev_c = self.c
+        #self.ch = camera_devices.Helper(driver='Maxim.Application')
+        print('camera object at:  ', self.c, self.c.acam)
+        #print(self.c.amdl.Filter)
 
         self.d = r.make_dynamodb(self.name)
         self.q = r.make_sqs(self.name)
         self.s = r.make_s3(self.name)
+        
+        dyard.dev = {
+                   "c": self.c,
+                   "m": self.m,
+                   "r": self.r,
+                   'fc': self.fc,
+                   'wx': None
+                   }
 
         self.run()
+        
+        #                camera_1_app = win32com.client.Dispatch("Maxim.Application")
+#                camera_1= win32com.client.Dispatch("Maxim.CCDCamera")
+#                #doc = win32com.client.Dispatch("Maxim.Document")   #Envoking this creates an empty image.
+#                camera_1.LinkEnabled = True
+#                camera_1_app.TelescopeConnected = True
+#                camera_1_app.FocuserConnected = True
+#                camera_1.CoolerOn = True
+#                if camera_1.LinkEnabled and camera_1_app.TelescopeConnected and camera_1_app.FocuserConnected \
+#                   and camera_1.CoolerOn:
+#                    print("Maxim appears connected.")
 
     def run(self):
         """
@@ -48,16 +87,29 @@ class Observatory:
     def _do_request(self, r):
         command = r['command']
         if command == 'goto':
-            self.m.slew_to_eq(r['ra'], r['dec'])
+            print('goto command received.')
+            self.m.slew_to_eq(float(r['ra']), float(r['dec']), r['rdsys'])
+            self._progress()
+        if command == 'goto_azalt':
+            self.m.slew_to_azalt(float(r['az']), float(r['alt']))
             print(self.name)
             self._progress()
+        if command == 'allstop':
+            self.m.allstop()
+            self._progress()
         if command == 'park':
+            print('park:  ', self, self.m, self.m.park)
             self.m.park()
             self._progress()
+        if command == 'unpark':
+            print('unpark:  ', self, self.m, self.m.unpark)
+            self.m.unpark()
+            self._progress()
         if command == 'expose':
-            filename = self.c.start_exposure(self.name, r['duration'])
-            self._progress(r['duration'])
-            self.s.upload_file(filename)
+            self.c.start_exposure(self.name,  r['duration'], r['filter'], r['repeat'])
+            filename = 'dummy.jpeg'  #self.c.start_exposure(self.name, r['duration'], r['filter'], r['repeat'])
+            self._progress(r['duration']) #should add in camera overhead once that is better predicatable
+            self.s.upload_file(filename)   #SEnd to S3
 
             
 
@@ -65,8 +117,11 @@ class Observatory:
         while True:
             m_status = json.loads(self.m.get_mount_status())
             c_status = json.loads(self.c.get_camera_status())
+            #ch_status = json.loads(self.ch.get_helper_status())
+            r_status = json.loads(self.r.get_rotator_status())
+            fc_status = json.loads(self.fc.get_focuser_status())
 
-            status ={**m_status, **c_status}
+            status ={**m_status, **c_status, **r_status, **fc_status}#, **ch_status}
 
             # Include index key/val: key 'State' with value 'State'.
             status['State'] = 'State'
@@ -103,6 +158,7 @@ if __name__=="__main__":
     observatories = {}
     resources = r("sites_config.yml")
     sites = resources.get_all_sites()
+    print('sites:  ', sites)
     for site in sites:
         observatories[site] = Observatory(site)
 

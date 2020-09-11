@@ -92,7 +92,7 @@ class Resources:
     def get_all_sqs(self):
         return self.all_sqs
 
-    def get_all_dyanmodb(self):
+    def get_all_dynamodb(self):
         return self.all_dynamodb
 
     def get_all_s3(self):
